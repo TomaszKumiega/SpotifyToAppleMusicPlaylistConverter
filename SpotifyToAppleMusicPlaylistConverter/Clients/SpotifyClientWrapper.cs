@@ -16,6 +16,7 @@ namespace SpotifyToAppleMusicPlaylistConverter.Clients
         private readonly ApplicationConfig _applicationConfig = applicationConfig;
         private readonly ISpotifyClientFactory _spotifyClientFactory = spotifyClientFactory;
 
+        #region Login
         public async Task<SpotifyClientWrapper> Login()
         {
             _authServer = new EmbedIOAuthServer(_authorizationCallbackUri, 8000);
@@ -42,6 +43,21 @@ namespace SpotifyToAppleMusicPlaylistConverter.Clients
         private void InitializeSpotifyClient(AuthorizationCodeResponse response)
         {
             _spotifyClient = _spotifyClientFactory.Create(_applicationConfig.SpotifyClientId, _applicationConfig.SpotifyClientSecret, response, _authorizationCallbackUri);
+        }
+        #endregion
+
+        public async Task<IEnumerable<SavedTrack>> GetUsersSavedTracks()
+        {
+            if (_spotifyClient == null)
+            {
+                throw new InvalidOperationException("Login first.");
+            }
+
+            var firstPage = await _spotifyClient.Library.GetTracks();
+
+            IList<SavedTrack> savedTracks = await _spotifyClient.PaginateAll(firstPage);
+
+            return savedTracks;
         }
     }
 }

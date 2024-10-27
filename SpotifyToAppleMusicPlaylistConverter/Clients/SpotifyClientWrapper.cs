@@ -25,6 +25,18 @@ namespace SpotifyToAppleMusicPlaylistConverter.Clients
             _authServer.AuthorizationCodeReceived += OnAuthorizationCodeReceived;
             _authServer.ErrorReceived += OnErrorReceived!;
 
+            var request = new LoginRequest(_authServer.BaseUri, _applicationConfig.SpotifyClientId, LoginRequest.ResponseType.Code)
+            {
+                Scope = [Scopes.UserReadEmail, Scopes.UserLibraryRead]
+            };
+
+            BrowserUtil.Open(request.ToUri());
+
+            while (_spotifyClient == null)
+            {
+                await Task.Delay(1000);
+            }
+
             return this;
         }
 
@@ -46,7 +58,7 @@ namespace SpotifyToAppleMusicPlaylistConverter.Clients
         }
         #endregion
 
-        public async Task<IEnumerable<SavedTrack>> GetUsersSavedTracks()
+        public async Task<IAsyncEnumerable<SavedTrack>> GetUsersSavedTracks()
         {
             if (_spotifyClient == null)
             {
@@ -55,9 +67,7 @@ namespace SpotifyToAppleMusicPlaylistConverter.Clients
 
             var firstPage = await _spotifyClient.Library.GetTracks();
 
-            IList<SavedTrack> savedTracks = await _spotifyClient.PaginateAll(firstPage);
-
-            return savedTracks;
+            return _spotifyClient.Paginate(firstPage);
         }
     }
 }
